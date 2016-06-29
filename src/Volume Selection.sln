@@ -1,8 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Volume_Selection", "Volume_Selection\Volume_Selection.fsproj", "{493297F0-418C-46C6-9AE4-97660EF3EC39}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyGpcWrapper", "MyGpcWrapper\MyGpcWrapper.csproj", "{08D71645-2D07-4FE5-9A9E-F4FF84724DB8}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VolumeSelection", "VolumeSelection\VolumeSelection.fsproj", "{493297F0-418C-46C6-9AE4-97660EF3EC39}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VolumeSelection.Example", "VolumeSelection.Example\VolumeSelection.Example.fsproj", "{C642F44F-D68E-490C-87FB-F387667D455C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,10 +14,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{08D71645-2D07-4FE5-9A9E-F4FF84724DB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08D71645-2D07-4FE5-9A9E-F4FF84724DB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08D71645-2D07-4FE5-9A9E-F4FF84724DB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08D71645-2D07-4FE5-9A9E-F4FF84724DB8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{493297F0-418C-46C6-9AE4-97660EF3EC39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{493297F0-418C-46C6-9AE4-97660EF3EC39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{493297F0-418C-46C6-9AE4-97660EF3EC39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{493297F0-418C-46C6-9AE4-97660EF3EC39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C642F44F-D68E-490C-87FB-F387667D455C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C642F44F-D68E-490C-87FB-F387667D455C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C642F44F-D68E-490C-87FB-F387667D455C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C642F44F-D68E-490C-87FB-F387667D455C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

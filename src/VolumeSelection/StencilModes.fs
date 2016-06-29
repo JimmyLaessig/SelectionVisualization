@@ -25,11 +25,18 @@ module StencilModes =
                             )  
 
     // Stencil Mode for highlighting the selection
-    let stencilModeHighLight = Rendering.StencilMode(
+    let stencilModeHighLightOnes = Rendering.StencilMode(
                                         IsEnabled   = true,
                                         Compare     = Rendering.StencilFunction(Rendering.StencilCompareFunction.Equal, 1, 0xFFu),
                                         Operation   = Rendering.StencilOperation(Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep)
                                    ) 
+    // Stencil Mode for highlighting the selection
+    let stencilModeHighLightZeros = Rendering.StencilMode(
+                                        IsEnabled   = true,
+                                        Compare     = Rendering.StencilFunction(Rendering.StencilCompareFunction.Equal, 0, 0xFFu),
+                                        Operation   = Rendering.StencilOperation(Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep)
+                                   ) 
+    
                                  
     // Stencil Mode to normalize after AND Selection
     let NormalizeAfterAND = Rendering.StencilMode(
@@ -64,14 +71,7 @@ module StencilModes =
                                         IsEnabled   = true,
                                         Compare     = Rendering.StencilFunction(Rendering.StencilCompareFunction.Always, 0, 0xFFu),
                                         Operation   = Rendering.StencilOperation(Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.IncrementWrap, Rendering.StencilOperationFunction.Keep)                                                         
-                                    )   
-
-    // Stencil Mode to normalize after Invert - Pass2
-    let NormalizeAfterINVERTPass2 = Rendering.StencilMode(
-                                        IsEnabled   = true,
-                                        Compare     = Rendering.StencilFunction(Rendering.StencilCompareFunction.NotEqual, 2, 0xFFu),
-                                        Operation   = Rendering.StencilOperation(Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Zero)                                                          
-                                   )                                                 
+                                    )                                                 
                                     
                                                                    
                                  

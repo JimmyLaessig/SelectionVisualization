@@ -1,5 +1,5 @@
 ﻿open System
-open System.Collections.Generic
+
 open System.Linq
 open Aardvark.Base
 open Aardvark.Base.Incremental
@@ -10,13 +10,14 @@ open Aardvark.Application.WinForms
 open Aardvark.Base.Rendering
 
 open CameraController
+
 open Lasso
 open VolumeSelection
 open ShadowVolumeShader
 open Aardvark.Git
  
-//open VolumeSelection
-open Aardvark.VRVis
+open VolumeSelection
+
 
 [<EntryPoint>]
 let main argv = 
@@ -144,22 +145,20 @@ let main argv =
                                             runtime                 
                                             framebufferSignature
     
-    // Create RenderPass for after VolumeSelection
-    let sg = adaptive {
-        let! pass = renderPass
-        let renderPassLasso = Rendering.RenderPass.after "lassoPass" Rendering.RenderPassOrder.Arbitrary pass    
+    // Create RenderPass for after VolumeSelection 
+    let renderPassLasso = Rendering.RenderPass.after "lassoPass" Rendering.RenderPassOrder.Arbitrary renderPass    
         
-        // Scenegraph with temporary Lasso
-        let sceneGraph_WithLasso = 
-            LassoSg.withSg (Sg.dynamic sg) win lasso
-                |> Sg.surface   (lineEffect |> Mod.constant)
-                |> Sg.pass      renderPassLasso  
-        return sceneGraph_WithLasso      
-    }
+    // Scenegraph with temporary Lasso
+    let sceneGraph_WithLasso = 
+        LassoSg.withSg (Sg.dynamic sg) win lasso
+            |> Sg.surface   (lineEffect |> Mod.constant)
+            |> Sg.pass      renderPassLasso        
     
-     
+
+   // let config = BackendConfiguration.ManagedUnoptimized    
+    let config = BackendConfiguration.NativeOptimized 
     let task =
-        app.Runtime.CompileRender(win.FramebufferSignature,  Sg.dynamic sg)
+        app.Runtime.CompileRender(win.FramebufferSignature,config, sceneGraph_WithLasso)
             |> DefaultOverlays.withStatistics
 
 

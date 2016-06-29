@@ -2,6 +2,16 @@
 
 open System
 
+
+open Aardvark.Base
+open Aardvark.Base.Incremental
+open Aardvark.Rendering.NanoVg
+open Aardvark.SceneGraph
+open Aardvark.Base.Rendering
+
+open System
+open System.Linq
+
 open Aardvark.Base
 open Aardvark.Base.Incremental
 open Aardvark.Base.Incremental.Git
@@ -23,6 +33,7 @@ open Aardvark.Git
             World2NearPlane : Trafo3d
             Proj            : Trafo3d
             View            : Trafo3d
+            TriangleList    : V2d list
         }
 
     type Selection = 
@@ -215,8 +226,18 @@ open Aardvark.Git
                             | fst::snd::_ ->Lasso.Logic.resultrect fst snd 
                     | _ ->              vertices |> List.toArray
             Polygon2d(corners)
-
-        let npp = { Polygon = poly; World2NearPlane = world2NearPlane; View = viewTrafo ; Proj = projTrafo}
+        
+        // Triangulate Polygon
+        
+        let gpcPoly = GPC.GpcPolygon(poly.Points.ToArray())                   
+            // Create lightcap Vertex Array           
+        let triangleList = 
+            gpcPoly.ComputeTriangulation() 
+                |> Array.map ( fun t -> [| t.P2; t.P1; t.P0 |] ) 
+                |> Array.concat 
+                |> Array.toList    
+        
+        let npp = { Polygon = poly; World2NearPlane = world2NearPlane; View = viewTrafo ; Proj = projTrafo; TriangleList = triangleList}
 
         match state.selection.Value with
             | NoSelection ->
@@ -484,7 +505,7 @@ module LassoSg =
             let! l = v
             let points =
                 l |> Array.map (fun n -> 
-                    V3d(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.0) |> V3f.op_Explicit
+                    V3f(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.0)
                 )
             if points |> Array.length > 0 then
                 return Array.append points [| points.[0] |]
