@@ -18,8 +18,9 @@ Linux:
 - run xbuild src/Aardvark.sln
 
 ## Projects
-# Visual Selection
-# MyGpcWrapper
+### Visual Selection
+### MyGpcWrapper
+### Visual Selection Example
 
 
 Windows:
