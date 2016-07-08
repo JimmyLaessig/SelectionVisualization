@@ -1,7 +1,17 @@
 
 Volume Selection is a technique that utilizes Shadow Volumes for visual selection on any data sets. The selection happens purely on the GPU without manipulating the underlying data. The selection works independently of the dataset, making it perfect for applications like Point-Cloud Rendering, where memory transfer is a bottleneck.  
-The technique is implemented in F# using the Aardvark framework. 
-To include the technique in an Aardvark scenegraph, the Init-method must be called. All parameters, that possibly change the selection are provided as IMods. Therefore the selection auto-updates itself, when a parameter (camera view) changes. 
+The technique is implemented in F# using the [Aardvark](https://github.com/vrvis/aardvark) framework. The project uses the General Polygon Clipper library, which can be downloaded [here](http://www.cs.man.ac.uk/~toby/gpc/). Unfortunately, we cannot provice a bundle including a compiled version of the GPC library which we use for triangulation and clipping. Therefore, in order to use this project, you need to download and build the library yourself. Navigate to the folder of the GPC source code and execute the following command in order to compile the GPC library: 
+
+"PATH_TO_VISUAL_STUDIO\VC\bin\amd64\vcvars64.bat" && cl /LD gpc.c
+
+The resulting DLL (gpc.dll) should be put besides your current executable of the project (typically bin/Release or bin/Debug). 
+The application consists of three projects, two of which are compiled to a DLL and one example implementation compiled to an executable. 
+###MyGpcWrapper
+This project is a C# Wrapper library for the C++ implementation the General Polygon Clipper library. GPC Polygons are used in order to triangulate the screen-space selection polygon. 
+###Visual Selection
+This project is the core library of the application. In stores the logic for the visual selection and all resources.
+###Visual Selection Example
+The example project shows the usage of the visual selection library in a simple test scene. 
 
 ##How to build
 
@@ -17,18 +27,6 @@ Linux:
 - run build.sh which will install all dependencies
 - run xbuild src/Aardvark.sln
 
-## Projects
-### Visual Selection
-### MyGpcWrapper
-### Visual Selection Example
+##Usage
+To include the technique in an Aardvark scenegraph, the Init-method must be called. All parameters, that possibly change the selection are provided as IMods. Therefore the selection auto-updates itself, when a parameter (camera view) changes. 
 
-
-Windows:
-- Visual Studio 2015,
-- Visual FSharp Tools installed (we use 4.0 now) 
-- run build.cmd which will install all dependencies
-- msbuild src\Aardvark.sln or use VisualStudio to build the solution
-
-The progam.fs provides an example implementation on a simple scene. 
-[Aardvark](https://github.com/vrvis/aardvark)
-[General Polygon Clipper](http://www.cs.man.ac.uk/~toby/gpc/)
