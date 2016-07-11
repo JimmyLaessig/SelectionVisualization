@@ -54,6 +54,8 @@ namespace GPC
 
         public static GpcPolygon Clip(GpcOperation operation, GpcPolygon subject_polygon, GpcPolygon clip_polygon)
         {
+            
+
             gpc_polygon gpc_polygon = new gpc_polygon();
             gpc_polygon gpc_subject_polygon = subject_polygon.ToNative();
             gpc_polygon gpc_clip_polygon = clip_polygon.ToNative();
@@ -176,7 +178,7 @@ namespace GPC
 
         #region bindings to native dll
 
-        private const string dllName = "GeneralPolygonClipper.dll";
+        private const string dllName = "gpc.dll";
 
         [DllImport(dllName, EntryPoint = "gpc_polygon_to_tristrip")]
         private static extern void gpc_polygon_to_tristrip([In]     ref gpc_polygon polygon,
@@ -250,6 +252,7 @@ namespace GPC
 
     public struct GpcPolygon
     {
+
         public bool[] Hole;
         public Polygon2d[] Contour;
 
