@@ -2,9 +2,13 @@
 Volume Selection is a technique that utilizes Shadow Volumes for visual selection on any data sets. The selection happens purely on the GPU without manipulating the underlying data. The selection works independently of the dataset, making it perfect for applications like Point-Cloud Rendering, where memory transfer is a bottleneck.  
 The technique is implemented in F# using the [Aardvark](https://github.com/vrvis/aardvark) framework. The project uses the General Polygon Clipper library, which can be downloaded [here](http://www.cs.man.ac.uk/~toby/gpc/). #
 Although GPC is free for academic use, we cannot provide the project including
-a compiled version of GPC library. Therefore, in order to use this project, you need to download and build the library yourself. Navigate to the folder of the GPC source code and execute the following command in order to compile the GPC library: 
-
-"PATH_TO_VISUAL_STUDIO\VC\bin\amd64\vcvars64.bat" && cl /LD gpc.c
+a compiled version of GPC library. Therefore, in order to use this project, you need to download and build the library yourself: 
+- Each method in the gpc.h file must be extended with __declspec(dllimport) attribute to be visible for other applications in the dll,   e.g.: 
+  
+  ___declspec(dllimport)	void gpc_polygon_to_tristrip (	gpc_polygon     *polygon, gpc_tristrip    *tristrip);
+- Navigate to the folder of the GPC source code and execute the following command in order to compile the GPC library: 
+  
+  "PATH_TO_VISUAL_STUDIO\VC\bin\amd64\vcvars64.bat" && cl /LD gpc.c
 
 The resulting DLL (gpc.dll) should be put besides your current executable of the project (typically bin/Release or bin/Debug). 
 The application consists of three projects, two of which are compiled to a DLL and one example implementation compiled to an executable. 
