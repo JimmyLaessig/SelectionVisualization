@@ -105,9 +105,9 @@ module VolumeSelection =
 //                            |> Array.map ( fun t -> [| t.P2; t.P1; t.P0 |] ) 
 //                            |> Array.concat 
 //                            |> Array.toList   
-
+                    
                     let lightcapVertices    = polygon.TriangleList;                       
-                    let lightcapPositions   = lightcapVertices.ToArray()   |> Array.map (fun n -> V3f(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.0))          
+                    let lightcapPositions   = lightcapVertices.ToArray()   |> Array.map (fun n -> V3f(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.1))          
 
                     // Create Geometry for lightcap 
                     let lightcapGeometry = IndexedGeometry(       
@@ -212,6 +212,7 @@ module VolumeSelection =
                 // OR Selection => Recoursive add Selection
                 |Lasso.Or (selection, polygon)  -> 
                                                     // Recoursive selection
+                                                    //for i in 0..10 do
                                                     let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                
                                                     // Add current polygon to scenegraph
                                                     addSelectionPolygon polygon sg renderVolumes remainingRenderPasses Selection.Or                                           

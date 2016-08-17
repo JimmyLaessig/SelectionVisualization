@@ -30,6 +30,8 @@ module StencilModes =
                                         Compare     = Rendering.StencilFunction(Rendering.StencilCompareFunction.Equal, 1, 0xFFu),
                                         Operation   = Rendering.StencilOperation(Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep, Rendering.StencilOperationFunction.Keep)
                                    ) 
+
+
     // Stencil Mode for highlighting the selection
     let stencilModeHighLightZeros = Rendering.StencilMode(
                                         IsEnabled   = true,
