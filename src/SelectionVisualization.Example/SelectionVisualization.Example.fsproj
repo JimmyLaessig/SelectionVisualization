@@ -5,14 +5,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>493297f0-418c-46c6-9ae4-97660ef3ec39</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>Volume_Selection</RootNamespace>
-    <AssemblyName>VolumeSelection</AssemblyName>
+    <ProjectGuid>c642f44f-d68e-490c-87fb-f387667d455c</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Volume_Selection_Example</RootNamespace>
+    <AssemblyName>SelectionVisualization.Example</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
-    <Name>VolumeSelection</Name>
+    <Name>SelectionVisualization.Example</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,7 +21,7 @@
     <Tailcalls>false</Tailcalls>
     <OutputPath>..\..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
+    <WarningLevel>0</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>
     </DocumentationFile>
@@ -37,29 +37,21 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>
     </DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
+    <Reference Include="SelectionVisualization, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Lasso.fs" />
-    <Compile Include="ShadowVolumeShader.fs" />
-    <Compile Include="StencilModes.fs" />
-    <Compile Include="VolumeSelection.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\MyGpcWrapper\MyGpcWrapper.csproj">
-      <Name>MyGpcWrapper</Name>
-      <Project>{08d71645-2d07-4fe5-9a9e-f4ff84724db8}</Project>
-      <Private>True</Private>
-    </ProjectReference>
+    <Compile Include="CameraController.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

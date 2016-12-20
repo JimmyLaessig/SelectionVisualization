@@ -12,11 +12,11 @@ open Aardvark.Base.Rendering
 open CameraController
 
 open Lasso
-open VolumeSelection
-open ShadowVolumeShader
+open SelectionVisualization
+open Shaders
 open Aardvark.Git
  
-open VolumeSelection
+
 
 
 [<EntryPoint>]
@@ -26,7 +26,7 @@ let main argv =
 
 
     use app = new OpenGlApplication()
-    let win = app.CreateSimpleRenderWindow(16)
+    let win = app.CreateSimpleRenderWindow(1)
 
 
     let planeEffect  = app.Runtime.PrepareEffect(win.FramebufferSignature, [DefaultSurfaces.trafo |> toEffect; DefaultSurfaces.constantColor (C4f(0.3, 0.3, 0.3, 1.0)) |> toEffect; DefaultSurfaces.simpleLighting |> toEffect]) :> ISurface      
@@ -133,7 +133,7 @@ let main argv =
     let framebufferSignature = win.FramebufferSignature
     
     // Create VolumeSelection
-    let (sg, renderPass) = VolumeSelection.Init 
+    let (sg, renderPass) = SelectionVisualization.Init 
                                             sceneGraph 
                                             viewTrafo   
                                             projTrafo   

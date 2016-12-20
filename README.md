@@ -5,7 +5,7 @@ Although GPC is free for academic use, we cannot provide the project including
 a compiled version of GPC library. Therefore, in order to use this project, you need to download and build the library yourself: 
 - Each method in the gpc.h file must be extended with __declspec(dllimport) attribute to be visible for other applications in the dll,   e.g.: 
   
-  ___declspec(dllimport)	void gpc_polygon_to_tristrip (	gpc_polygon     *polygon, gpc_tristrip    *tristrip);
+  __declspec(dllimport)	void gpc_polygon_to_tristrip (	gpc_polygon     *polygon, gpc_tristrip    *tristrip);
 - Navigate to the folder of the GPC source code and execute the following command in order to compile the GPC library: 
   
   "PATH_TO_VISUAL_STUDIO\VC\bin\amd64\vcvars64.bat" && cl /LD gpc.c

@@ -1,4 +1,4 @@
-﻿namespace VolumeSelection
+﻿namespace SelectionVisualization
 
 open Aardvark.Base
 open Aardvark.Base.Rendering

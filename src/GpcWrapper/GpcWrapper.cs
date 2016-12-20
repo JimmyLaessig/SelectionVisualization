@@ -21,7 +21,7 @@ namespace GPC
     /// If a polygon defined as a hole intersects the boundary polygon, the part of the hole-polygon that
     /// lies outside is treated as a normal "outer boundary" polygon.
     /// </summary>
-    public static class MyGpcWrapper
+    public static class GpcWrapper
     {
         public static V2d[][] ComputeTriangleStrip(GpcPolygon polygon)
         {
@@ -30,8 +30,8 @@ namespace GPC
             gpc_polygon_to_tristrip(ref gpc_pol, ref gpc_strip);
             var result = gpc_strip.ToManaged();
 
-            MyGpcWrapper.Free(gpc_pol);
-            MyGpcWrapper.gpc_free_tristrip(ref gpc_strip);
+            GpcWrapper.Free(gpc_pol);
+            GpcWrapper.gpc_free_tristrip(ref gpc_strip);
 
             return result;
         }
@@ -45,9 +45,9 @@ namespace GPC
             gpc_tristrip_clip(operation, ref gpc_subject_polygon, ref gpc_clip_polygon, ref gpc_strip);
             var result = gpc_strip.ToManaged();
 
-            MyGpcWrapper.Free(gpc_subject_polygon);
-            MyGpcWrapper.Free(gpc_clip_polygon);
-            MyGpcWrapper.gpc_free_tristrip(ref gpc_strip);
+            GpcWrapper.Free(gpc_subject_polygon);
+            GpcWrapper.Free(gpc_clip_polygon);
+            GpcWrapper.gpc_free_tristrip(ref gpc_strip);
 
             return result;
         }
@@ -63,9 +63,9 @@ namespace GPC
             gpc_polygon_clip(operation, ref gpc_subject_polygon, ref gpc_clip_polygon, ref gpc_polygon);
             var result = gpc_polygon.ToManaged();
 
-            MyGpcWrapper.Free(gpc_subject_polygon);
-            MyGpcWrapper.Free(gpc_clip_polygon);
-            MyGpcWrapper.gpc_free_polygon(ref gpc_polygon);
+            GpcWrapper.Free(gpc_subject_polygon);
+            GpcWrapper.Free(gpc_clip_polygon);
+            GpcWrapper.gpc_free_polygon(ref gpc_polygon);
 
             return result;
         }
@@ -288,7 +288,7 @@ namespace GPC
 
         public Triangle2d[] ComputeTriangulation()
         {
-            var tristrips = MyGpcWrapper.ComputeTriangleStrip(this);
+            var tristrips = GpcWrapper.ComputeTriangleStrip(this);
             var totalTriangleCount = tristrips.Select(x => x.Length - 2).Sum();
             var triangles = new Triangle2d[totalTriangleCount];
             int ti = 0;
@@ -311,7 +311,7 @@ namespace GPC
             var vertices = new List<V2d>();
             var indices = new List<int>();
 
-            var tristrip = MyGpcWrapper.ComputeTriangleStrip(this);
+            var tristrip = GpcWrapper.ComputeTriangleStrip(this);
 
             foreach (var s in tristrip)
             {
@@ -384,7 +384,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Intersect(this GpcPolygon self, GpcPolygon other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Intersection, self, other);
+            return GpcWrapper.Clip(GpcOperation.Intersection, self, other);
         }
 
         /// <summary>
@@ -392,7 +392,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Subtract(this GpcPolygon self, GpcPolygon other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Difference, self, other);
+            return GpcWrapper.Clip(GpcOperation.Difference, self, other);
         }
 
         /// <summary>
@@ -400,7 +400,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Unite(this GpcPolygon self, GpcPolygon other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Union, self, other);
+            return GpcWrapper.Clip(GpcOperation.Union, self, other);
         }
 
         /// <summary>
@@ -408,7 +408,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon XOr(this GpcPolygon self, GpcPolygon other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.XOr, self, other);
+            return GpcWrapper.Clip(GpcOperation.XOr, self, other);
         }
     }
 
@@ -424,7 +424,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Intersect(this Polygon2d self, Polygon2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Intersection, self.ToGpcPolygon(), other.ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Intersection, self.ToGpcPolygon(), other.ToGpcPolygon());
         }
 
         /// <summary>
@@ -432,7 +432,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Intersect(this Polygon2d self, Box2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Intersection, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Intersection, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
         }
 
         /// <summary>
@@ -440,7 +440,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Subtract(this Polygon2d self, Polygon2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Difference, self.ToGpcPolygon(), other.ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Difference, self.ToGpcPolygon(), other.ToGpcPolygon());
         }
 
         /// <summary>
@@ -448,7 +448,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Subtract(this Polygon2d self, Box2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Difference, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Difference, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
         }
 
         /// <summary>
@@ -456,7 +456,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Unite(this Polygon2d self, Polygon2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Union, self.ToGpcPolygon(), other.ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Union, self.ToGpcPolygon(), other.ToGpcPolygon());
         }
 
         /// <summary>
@@ -464,7 +464,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon Unite(this Polygon2d self, Box2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.Union, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.Union, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
         }
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon XOr(this Polygon2d self, Polygon2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.XOr, self.ToGpcPolygon(), other.ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.XOr, self.ToGpcPolygon(), other.ToGpcPolygon());
         }
 
         /// <summary>
@@ -480,7 +480,7 @@ namespace GPC
         /// </summary>
         public static GpcPolygon XOr(this Polygon2d self, Box2d other)
         {
-            return MyGpcWrapper.Clip(GpcOperation.XOr, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
+            return GpcWrapper.Clip(GpcOperation.XOr, self.ToGpcPolygon(), other.ToPolygon2dCCW().ToGpcPolygon());
         }
     }
 }

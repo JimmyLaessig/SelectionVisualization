@@ -1,11 +1,11 @@
-﻿namespace Aardvark.SceneGraph
+﻿namespace SelectionVisualization
 
 open Aardvark.Base
 open Aardvark.Base.Incremental
 open FShade
 open Aardvark.Base.Rendering
 
-module ShadowVolumeShader =
+module Shaders =
        
 
     type Vertex = {

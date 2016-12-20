@@ -1,4 +1,4 @@
-﻿namespace VolumeSelection
+﻿namespace SelectionVisualization
 
 open Aardvark.Base
 open Aardvark.Base.Incremental
@@ -10,10 +10,10 @@ open System
 open System.Linq
 
 
-open ShadowVolumeShader
+open Shaders
 open Lasso
 
-module VolumeSelection =
+module SelectionVisualization =
 
     type Selection =
     | Single
@@ -73,8 +73,8 @@ module VolumeSelection =
         let highlightColor2 = C4f(0.0, 1.0,0.0,0.2) |> Mod.constant
         
         // Initialize Shading Effects
-        let volumeAdditiveEffect    = runtime.PrepareEffect(framebufferSignature, [ShadowVolumeShader.trafo |> toEffect;  ShadowVolumeShader.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor volumeColor  |> toEffect]) :> ISurface
-        let volumeSubtractiveEffect = runtime.PrepareEffect(framebufferSignature, [ShadowVolumeShader.trafo |> toEffect;  ShadowVolumeShader.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor invVolumeColor  |> toEffect]) :> ISurface
+        let volumeAdditiveEffect    = runtime.PrepareEffect(framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor volumeColor  |> toEffect]) :> ISurface
+        let volumeSubtractiveEffect = runtime.PrepareEffect(framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor invVolumeColor  |> toEffect]) :> ISurface
                           
         let normalizeStencilEffect = runtime.PrepareEffect(framebufferSignature, [DefaultSurfaces.constantColor C4f.Black |> toEffect]) :> ISurface         
         let hightlightEffect        = runtime.PrepareEffect(framebufferSignature, [DefaultSurfaces.uniformColor selectionColor |> toEffect]) :> ISurface               
