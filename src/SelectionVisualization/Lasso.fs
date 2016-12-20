@@ -1,20 +1,15 @@
 ﻿namespace Lasso
 
 open System
-
-
-open Aardvark.Base
-open Aardvark.Base.Incremental
-open Aardvark.Rendering.NanoVg
-open Aardvark.SceneGraph
-open Aardvark.Base.Rendering
-
-open System
 open System.Linq
 
+
 open Aardvark.Base
 open Aardvark.Base.Incremental
-open Aardvark.Base.Incremental.Git
+open Aardvark.SceneGraph
+
+
+//open Aardvark.Base.Incremental.Git
 open Aardvark.Git
 
  [<AutoOpen>]
@@ -61,10 +56,9 @@ open Aardvark.Git
      
     type InteractionState = 
         { 
-            currentMode   : ref<LassoMode> 
-            workingState  : gitref<Option<WorkingState>>
-            currentSelection : gitref<list<V2d>>
-            history     : ref<list<list<V2d> * Trafo3d>>
+            currentMode         : ref<LassoMode> 
+            workingState        : gitref<Option<WorkingState>>
+            currentSelection    : gitref<list<V2d>>
         }
 
     let initState (git : WorkingCopy) = 
@@ -72,7 +66,6 @@ open Aardvark.Git
             currentMode = ref NoLasso
             workingState = git.ref "lasso working state" None
             currentSelection = git.ref "selection" [] 
-            history = ref [] 
         }
         
     module Logic =
@@ -106,7 +99,7 @@ open Aardvark.Git
 
             let freshWorkingState () = 
                 // REVIEW gh: WTF?????
-                let freshRepo = WorkingCopy.init()
+                let freshRepo = WorkingCopy.init("")
                 change { 
                     do! s.workingState <== Some { git = freshRepo; points = freshRepo.ref "points" [] } 
                 }
@@ -330,13 +323,13 @@ module MouseKeyboard =
 
 
     module Lasso =
-
+        
         let WorkingCopy = WorkingCopy.init ()
 
         module Commit =
             let auto (w : WorkingCopy) (c : Change) =
                 w.apply c
-                w.autocommit()
+                //w.autocommit()
 
             let change (w : WorkingCopy) msg (c : Change) =
                 w.apply c
@@ -354,32 +347,33 @@ module MouseKeyboard =
 
             let double (s : VgmLasso) (pos : V2d) = 
                 Lasso.doubleclick s.State pos 
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
 
             let single (s : VgmLasso) (pos : V2d) =
                 Lasso.singleclick s.State !s.Mode pos 
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
   
                 let trafo = currentTrafo s
                 let view = viewTrafo s
                 let proj = projTrafo s
 
                 LassoInteraction.select s.Selection s.State (Mod.constant trafo) (Mod.constant view) (Mod.constant proj) !s.Mode s.Combinator
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
+                    |> Commit.change WorkingCopy ""
 
             let mouseup (s : VgmLasso) (pos : V2d) =
                 Lasso.clickup s.State pos
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
                     
                 let trafo = currentTrafo s
                 let view = viewTrafo s
                 let proj = projTrafo s
                 LassoInteraction.select s.Selection s.State (Mod.constant trafo) (Mod.constant view) (Mod.constant proj) !s.Mode s.Combinator
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
 
             let mousedown (s : VgmLasso) (pos : V2d) = 
                 Lasso.clickdown s.State !s.Mode pos
-                    |> Commit.auto WorkingCopy
+                    //|> Commit.auto WorkingCopy
 
             let move (s : VgmLasso) (pos : V2d) =
                 let changes = Lasso.move s.State pos
@@ -387,10 +381,10 @@ module MouseKeyboard =
                     failwith "Mouse move should not have produced changes"
 
         module Keyboard =
-            let switchToLasso (s : VgmLasso) =      s.Mode := Lasso.LassoMode.Lasso     ; Report.Line "Switched to Lasso"
-            let switchToPolygon (s : VgmLasso) =    s.Mode := Lasso.LassoMode.Polygon   ; Report.Line "Switched to Polygon"
-            let switchToRectangle (s : VgmLasso) =  s.Mode := Lasso.LassoMode.Rectangle ; Report.Line "Switched to Rectangle"
-            let invertSelection (s : VgmLasso) =    LassoInteraction.invert s.Selection |> Commit.change WorkingCopy "lasso invert"
+            let switchToLasso (s : VgmLasso)        = s.Mode := Lasso.LassoMode.Lasso     ; Report.Line "Switched to Lasso"
+            let switchToPolygon (s : VgmLasso)      = s.Mode := Lasso.LassoMode.Polygon   ; Report.Line "Switched to Polygon"
+            let switchToRectangle (s : VgmLasso)    = s.Mode := Lasso.LassoMode.Rectangle ; Report.Line "Switched to Rectangle"
+            let invertSelection (s : VgmLasso)      = LassoInteraction.invert s.Selection |> Commit.change WorkingCopy "lasso invert"
             
                             
     let initKeyboard (s : VgmLasso) (rc : IRenderControl) = 
