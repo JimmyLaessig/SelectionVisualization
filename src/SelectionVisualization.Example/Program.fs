@@ -17,6 +17,13 @@ open Shaders
 open Aardvark.Git
  
 
+module Database =
+    let memory = Aardvark.Base.Native.NewImpl.Memory.hglobal (int64 1<<<20)
+    let getMem i = Aardvark.Base.Native.NewImpl.Memory.hglobal (int64 1<<<20)
+
+    let store = new Aardvark.Base.Native.BlobStore(memory,getMem)
+
+    let db = new Aardvark.Database.Database(store)
 
 
 [<EntryPoint>]
@@ -58,7 +65,7 @@ let main argv =
     // Lasso stuff:
     // Keyboard modifiers for this RenderControl
     let keyModifiers = State.initModifiers win 
-    let wc = MouseKeyboard.Lasso.WorkingCopy
+    let wc = WorkingCopy.init "test" Database.db
     
     //lasso state using modifiers and a WorkingCopy
     let lasso = State.initLasso view proj keyModifiers wc
