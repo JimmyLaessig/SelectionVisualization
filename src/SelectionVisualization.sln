@@ -7,6 +7,10 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SelectionVisualization", "SelectionVisualization\SelectionVisualization.fsproj", "{493297F0-418C-46C6-9AE4-97660EF3EC39}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SelectionVisualization.Example", "SelectionVisualization.Example\SelectionVisualization.Example.fsproj", "{C642F44F-D68E-490C-87FB-F387667D455C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{08D71645-2D07-4FE5-9A9E-F4FF84724DB8} = {08D71645-2D07-4FE5-9A9E-F4FF84724DB8}
+		{493297F0-418C-46C6-9AE4-97660EF3EC39} = {493297F0-418C-46C6-9AE4-97660EF3EC39}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

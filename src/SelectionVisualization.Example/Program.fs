@@ -132,28 +132,37 @@ let main argv =
     // Framebuffer
     let framebufferSignature = win.FramebufferSignature
     
-    // Create VolumeSelection
-    let (sg, renderPass) = SelectionVisualization.Init 
-                                            sceneGraph 
-                                            viewTrafo   
-                                            projTrafo   
-                                            lasso      
-                                            selectionColor
-                                            selectionDistance 
-                                            volumeColor        
-                                            showVolumes         
-                                            Rendering.RenderPass.main 
-                                            runtime                 
-                                            framebufferSignature
+
+   
     
+
+    let  (p : SelectionVisualization.SelectionVisualizationParameters) =  
+        {
+            viewTrafo               = viewTrafo    
+            projTrafo               = projTrafo
+            lasso                   = lasso
+            selectionColor          = selectionColor
+            maxSelectionDistance    = selectionDistance
+            volumeColor             = volumeColor
+            showVolumes             = showVolumes
+            geometryPass            = Rendering.RenderPass.main
+            runtime                 = runtime
+            framebufferSignature    = framebufferSignature
+
+        }
+
+    // Create VolumeSelection
+    let (volumeSg, renderPass) = SelectionVisualization.Init p 
+                                            
     // Create RenderPass for after VolumeSelection 
     let renderPassLasso = Rendering.RenderPass.after "lassoPass" Rendering.RenderPassOrder.Arbitrary renderPass    
         
     // Scenegraph with temporary Lasso
     let sceneGraph_WithLasso = 
-        LassoSg.withSg (Sg.dynamic sg) win lasso
-            |> Sg.surface   (lineEffect |> Mod.constant)
-            |> Sg.pass      renderPassLasso        
+        lasso   |> LassoSg.withSg (sceneGraph) win
+                |> Sg.surface   (lineEffect |> Mod.constant)
+                |> Sg.pass      renderPassLasso  
+                |> Sg.andAlso   volumeSg      
     
 
    // let config = BackendConfiguration.ManagedUnoptimized    

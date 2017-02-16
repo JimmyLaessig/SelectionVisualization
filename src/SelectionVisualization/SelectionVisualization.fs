@@ -44,23 +44,24 @@ module SelectionVisualization =
 
 
     // Creates a list of renderpasses staring by the given renderpass
-    // the first element in the list is at the same time the last renderpass that is executed
-    let private appendRenderPass (renderPass :RenderPass) (numRenderPasses) = 
-        
-        let rec appendRenderPassRec (renderPassesBefore: list<RenderPass>)(numRenderPasses) = 
+    // the first element in the list is at the same time the first renderPass to be executed
+    let private appendRenderPass (renderPass : RenderPass) (numRenderPasses) = 
+
+
+        let rec appendRenderPassRec (renderPassesBefore: list<RenderPass>)(counter : int) = 
             
-             if numRenderPasses = 0 then
+             if counter = 0 then
                 renderPassesBefore
              else
                 match renderPassesBefore with
                 | [] -> failwith ""
                 | last::_ ->
-                    let name    = sprintf "%i" numRenderPasses
+                    let name    = sprintf "%i" (numRenderPasses - counter)
                     let newLast = last |> Rendering.RenderPass.after name RenderPassOrder.Arbitrary           
-                    appendRenderPassRec (newLast :: renderPassesBefore) (numRenderPasses - 1)    
+                    appendRenderPassRec (newLast :: renderPassesBefore) (counter - 1)    
                       
                        
-        appendRenderPassRec [renderPass] numRenderPasses
+        (appendRenderPassRec [renderPass] numRenderPasses) |> List.rev
 
 
 
@@ -209,77 +210,50 @@ module SelectionVisualization =
         // ----------------------------------------------------------------------------------------------- //
         let rec addSelectionToSceneGraph (selection : Lasso.Selection)(renderVolumes: bool)(renderPassList) : (ISg * list<RenderPass>)=
 
-                // Take next renderPass from list
-                match renderPassList with
-                | renderPass2 :: renderPass1 :: renderPasses -> 
+                
+            // Perform Recoursion
+            let (sg1, remainingRenderPasses1) = 
+                match selection with
+                        |Lasso.Selection.Single polygon         -> (Sg.ofList [] , renderPassList)
+                        |Lasso.NoSelection                      -> (Sg.ofList [] , renderPassList)
+                        |Lasso.Or (selection, polygon)          -> addSelectionToSceneGraph selection renderVolumes renderPassList
+                        |Lasso.And (selection, polygon)         -> addSelectionToSceneGraph selection renderVolumes renderPassList
+                        |Lasso.Xor (selection, polygon)         -> addSelectionToSceneGraph selection renderVolumes renderPassList
+                        |Lasso.Subtract (selection, polygon)    -> addSelectionToSceneGraph selection renderVolumes renderPassList
+                        |Lasso.Invert (selection)               -> addSelectionToSceneGraph selection renderVolumes renderPassList
                      
-                        match selection with
-                        |Lasso.Selection.Single polygon     ->  // Create scenegraph for current selection
-                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Single   
-                                                            // No Recoursion => return
-                                                            (volumeSg, renderPasses)                                                                             
-
-                        // OR Selection => Recoursive add Selection
-                        |Lasso.Or (selection, polygon)      ->  // Create scenegraph for current selection
-                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Or    
-                                                            // Recoursive selection
-                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
-                                                            
-                                                            // return combined scenegraphs and remaining RenderPasses                                 
-                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
-
-
-                        // And Selection => Recoursive add Selection
-                        |Lasso.And (selection, polygon)     -> // Create scenegraph for current selection
-                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.And    
-                                                            // Recoursive selection
-                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
-                                                            
-                                                            // return combined scenegraphs and remaining RenderPasses                                 
-                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
-
-                        // XOR Selection => Recoursive add Selection
-                        |Lasso.Xor (selection, polygon)     -> // Create scenegraph for current selection
-                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Xor    
-                                                            // Recoursive selection
-                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
-                                                            
-                                                            // return combined scenegraphs and remaining RenderPasses                                 
-                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
-
-                        // SUBTRACT Selection => Recoursive add Selection
-                        |Lasso.Subtract (selection, polygon) -> // Create scenegraph for current selection
-                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Subtract    
-                                                           
-                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
-                                                            
-                                                            // return combined scenegraphs and remaining RenderPasses                                 
-                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
-
-                        // INVERT Selection => Recoursive add Selection
-                        |Lasso.Invert (selection)           -> // Create scenegraph for inversion
-                                                            let invertSg = invertSelection renderPass1 renderPass2       
-                                                            // Recoursive selection
-                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPassList                                                                                                         
-                                                            // return combined scenegraphs and remaining RenderPasses         
-                                                            (Sg.group' [sg; invertSg], remainingRenderPasses)                                   
-                        // No Selection => Return empty Sg
-                        |Lasso.NoSelection                   -> (Sg.ofList [], renderPassList) 
+                
+            // Perform selection volume rendering  
+            let (sg2, remainingRenderPasses2) = 
+                match remainingRenderPasses1 with
+                | renderPass1 :: renderPass2 :: renderPasses ->  
+                    let volumeSg =                       
+                        match selection with                       
+                        |Lasso.Selection.Single polygon         -> addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Single
+                        |Lasso.Or (selection, polygon)          -> addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Or 
+                        |Lasso.And (selection, polygon)         -> addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.And
+                        |Lasso.Xor (selection, polygon)         -> addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Xor
+                        |Lasso.Subtract (selection, polygon)    -> addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Subtract
+                        |Lasso.Invert (selection)               -> invertSelection renderPass1 renderPass2                                             
+                        |Lasso.NoSelection                      -> Sg.ofList []
+                    (volumeSg, renderPasses)
                                  
                 | []    -> failwith "Not enough renderpasses allocated"
                 | _::_  -> failwith "Not enough renderpasses allocated"
-                                      
+            
+            (Sg.group'[sg1; sg2], remainingRenderPasses2)                   
         
 
 
-        let highlightSelectionPass = Rendering.RenderPass.after "Highlight_SelectionPass" Rendering.RenderPassOrder.Arbitrary p.geometryPass              
-                
+        let highlightSelectionPass = Rendering.RenderPass.after "Highlight_SelectionPass" Rendering.RenderPassOrder.Arbitrary p.geometryPass
             
         
         
         // TODO Dynamically resize renderPasses
         let numRenderPasses = 99
-        let renderPassList = appendRenderPass (RenderPass.after "100" Rendering.RenderPassOrder.Arbitrary p.geometryPass) numRenderPasses
+        let renderPassList = appendRenderPass (RenderPass.after "first" Rendering.RenderPassOrder.Arbitrary p.geometryPass) numRenderPasses
+       // let renderPassList2 = appendRenderPass (renderPassList.ElementAt (0)) 9
+
 
         // Scenegraph with a fullscreenquad to highlight the selection    
         let highlightSg = 
@@ -298,6 +272,7 @@ module SelectionVisualization =
         let sceneGraph = 
             let sg = 
                 adaptive {
+                    Log.warn "ASDASDASDASDASDASDASDASDASDAS"
                     let! lasso = p.lasso.Selection.selection
                     let! renderVolumes = p.showVolumes
                 
