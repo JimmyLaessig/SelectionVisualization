@@ -14,6 +14,22 @@ open Shaders
 open Lasso
 
 module SelectionVisualization =
+    
+
+    type SelectionVisualizationParameters = 
+        {
+            viewTrafo               : IMod<Trafo3d>
+            projTrafo               : IMod<Trafo3d>
+            lasso                   : MouseKeyboard.VgmLasso
+            selectionColor          : IMod<C4f>
+            maxSelectionDistance    : IMod<float>
+            volumeColor             : IMod<C4f>
+            showVolumes             : IMod<bool>
+            geometryPass            : RenderPass
+            runtime                 : IRuntime
+            framebufferSignature    : IFramebufferSignature
+
+        }
 
     type Selection =
     | Single
@@ -22,9 +38,29 @@ module SelectionVisualization =
     | Xor
     | Subtract
     
-    let writeStencilBuffer = Set.singleton DefaultSemantic.Stencil
-    let writeColorBuffer = Set.ofList[DefaultSemantic.Colors; DefaultSemantic.Stencil]
 
+    let private writeStencilBuffer  = Set.singleton DefaultSemantic.Stencil
+    let private writeColorBuffer    = Set.ofList[DefaultSemantic.Colors; DefaultSemantic.Stencil]
+
+
+    // Creates a list of renderpasses staring by the given renderpass
+    // the first element in the list is at the same time the last renderpass that is executed
+    let private appendRenderPass (renderPass :RenderPass) (numRenderPasses) = 
+        
+        let rec appendRenderPassRec (renderPassesBefore: list<RenderPass>)(numRenderPasses) = 
+            
+             if numRenderPasses = 0 then
+                renderPassesBefore
+             else
+                match renderPassesBefore with
+                | [] -> failwith ""
+                | last::_ ->
+                    let name    = sprintf "%i" numRenderPasses
+                    let newLast = last |> Rendering.RenderPass.after name RenderPassOrder.Arbitrary           
+                    appendRenderPassRec (newLast :: renderPassesBefore) (numRenderPasses - 1)    
+                      
+                       
+        appendRenderPassRec [renderPass] numRenderPasses
 
 
 
@@ -44,60 +80,38 @@ module SelectionVisualization =
     /// <param name="runtime"></param>
     /// <param name="framebufferSignature"></param>
     /// </summary>
-    let Init (sceneGraph: ISg)(view: IMod<Trafo3d>)(proj: IMod<Trafo3d>)(lasso : MouseKeyboard.VgmLasso)(selectionColor: IMod<C4f>)(selectionDistance: IMod<double>)(volumeColor: IMod<C4f>)(showVolumes : IMod<bool>)(geometryPass: RenderPass)(runtime : IRuntime)(framebufferSignature: IFramebufferSignature) : (IMod<ISg> * RenderPass) = 
-      
-        
-        let highlightSelectionPass = Rendering.RenderPass.after "Highlight_SelectionPass" Rendering.RenderPassOrder.Arbitrary geometryPass              
-        
-        let numRenderPasses = 100
-        let numRenderPassesResize = 10
-        // Allocate a number of renderPasses
-        let rec appendRenderPass (afterPasses: list<RenderPass>): (list<RenderPass>) = 
-            
-             if List.length(afterPasses) >= numRenderPasses then
-                afterPasses
-             else
-                match afterPasses with
-                | [] -> failwith ""
-                | first::_ ->
-                    let renderPass = Rendering.RenderPass.after "" RenderPassOrder.Arbitrary first           
-                    appendRenderPass (renderPass::afterPasses)
-        
-        //let resizeRenderPass(renderPassList): (list<RenderPass>)
-            
-
-        let renderPassList = appendRenderPass [RenderPass.after "" Rendering.RenderPassOrder.Arbitrary geometryPass] |> List.rev
+    let Init (p : SelectionVisualizationParameters) : (ISg * RenderPass) = 
+       
       
 
-        let invVolumeColor = volumeColor |> Mod.map (fun c-> (C4f(1.0f - c.R, 1.0f - c.G, 1.0f - c.B, c.A)))
-        let highlightColor2 = C4f(0.0, 1.0,0.0,0.2) |> Mod.constant
-        
+        let invVolumeColor = p.volumeColor |> Mod.map (fun c-> (C4f(1.0f - c.R, 1.0f - c.G, 1.0f - c.B, c.A)))
+
         // Initialize Shading Effects
-        let volumeAdditiveEffect    = runtime.PrepareEffect(framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor volumeColor  |> toEffect]) :> ISurface
-        let volumeSubtractiveEffect = runtime.PrepareEffect(framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor invVolumeColor  |> toEffect]) :> ISurface
+        let volumeAdditiveEffect    = p.runtime.PrepareEffect(p.framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor p.volumeColor  |> toEffect]) :> ISurface
+        let volumeSubtractiveEffect = p.runtime.PrepareEffect(p.framebufferSignature, [Shaders.trafo |> toEffect;  Shaders.ExtrudeCaps |> toEffect; DefaultSurfaces.uniformColor invVolumeColor  |> toEffect]) :> ISurface
                           
-        let normalizeStencilEffect = runtime.PrepareEffect(framebufferSignature, [DefaultSurfaces.constantColor C4f.Black |> toEffect]) :> ISurface         
-        let hightlightEffect        = runtime.PrepareEffect(framebufferSignature, [DefaultSurfaces.uniformColor selectionColor |> toEffect]) :> ISurface               
+        let normalizeStencilEffect  = p.runtime.PrepareEffect(p.framebufferSignature, [DefaultSurfaces.constantColor C4f.Black          |> toEffect]) :> ISurface         
+        let hightlightEffect        = p.runtime.PrepareEffect(p.framebufferSignature, [DefaultSurfaces.uniformColor p.selectionColor    |> toEffect]) :> ISurface               
+        
         
         // Full Screen Quad Geometry
-        let fullscreenQuad = IndexedGeometry (
-                                Mode = IndexedGeometryMode.TriangleList, IndexArray = [| 0; 1; 2; 0; 2; 3 |],
-                                       IndexedAttributes = SymDict.ofList [DefaultSemantic.Positions, [| V3f(-1.0, -1.0, 1.0); V3f(1.0, -1.0, 1.0); V3f(1.0, 1.0, 1.0); V3f(-1.0, 1.0, 1.0) |] :> Array])                         
-        
+//        let fullscreenQuad = IndexedGeometry (
+//                                Mode = IndexedGeometryMode.TriangleList, IndexArray = [| 0; 1; 2; 0; 2; 3 |],
+//                                       IndexedAttributes = SymDict.ofList [DefaultSemantic.Positions, [| V3f(-1.0, -1.0, 1.0); V3f(1.0, -1.0, 1.0); V3f(1.0, 1.0, 1.0); V3f(-1.0, 1.0, 1.0) |] :> Array])                         
+//        
+
 
         // ----------------------------------------------------------------------------------------------- //
         // Adds a Selection polygon
         // ----------------------------------------------------------------------------------------------- //
-        let addSelectionPolygon(polygon : Lasso.NearPlanePolygon)(sceneGraph : ISg)(renderVolumes: bool)(renderPassList)(selection: Selection): (ISg * list<RenderPass>) =
+        let addSelectionPolygon(polygon : Lasso.NearPlanePolygon)(renderVolumes: bool)(renderPassVolume : RenderPass)(renderPassNormalize : RenderPass)(selection: Selection) =
            
-            match renderPassList with
-                | []                                        -> failwith "To many renderpasses used! Stop selecting you moron" // TODO RESIZE
-                | renderPassVolume::renderPassNormalize::remainingPasses -> 
 
-                    let worldTrafo = (polygon.View * polygon.Proj).Inverse |> Mod.constant  // Transformation into world space 
-                    let lightPos = polygon.View.Inverse.GetModelOrigin()    // Position of the "light" camera
+                let worldTrafo  = (polygon.View * polygon.Proj).Inverse |> Mod.constant     // Transformation into world space 
+                let lightPos    = polygon.View.Inverse.GetModelOrigin()                     // Position of the "light" camera
 
-                    // Triangulate Polygon     
+
+                // Triangulate Polygon     
 //                    let gpcPoly = GPC.GpcPolygon(polygon.Polygon.Points.ToArray())                   
 //                    // Create lightcap Vertex Array           
 //                    let lightcapVertices = 
@@ -106,160 +120,175 @@ module SelectionVisualization =
 //                            |> Array.concat 
 //                            |> Array.toList   
                     
-                    let lightcapVertices    = polygon.TriangleList;                       
-                    let lightcapPositions   = lightcapVertices.ToArray()   |> Array.map (fun n -> V3f(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.1))          
+                let lightcapVertices    = polygon.TriangleList;                       
+                let lightcapPositions   = lightcapVertices.ToArray()   |> Array.map (fun n -> V3f(2.0 * n.X - 1.0, 1.0 - 2.0 * n.Y, 0.1))          
 
-                    // Create Geometry for lightcap 
-                    let lightcapGeometry = IndexedGeometry(       
-                                                Mode = IndexedGeometryMode.TriangleList,
-                                                IndexedAttributes = SymDict.ofList [ DefaultSemantic.Positions, lightcapPositions :> Array]) 
+                // Create Geometry for lightcap 
+                let lightcapGeometry = IndexedGeometry(       
+                                            Mode = IndexedGeometryMode.TriangleList,
+                                            IndexedAttributes = SymDict.ofList [ DefaultSemantic.Positions, lightcapPositions :> Array]) 
       
-                     // Get the correct stencil modes and effects
-                    let (stencilModeVolume, stencilModeNormalize, name, effect)= 
-                        match selection with
-                        |Selection.Single   -> (StencilModes.Additive, StencilModes.NormalizeAfterOR, "No Normalizaion" ,volumeAdditiveEffect)
-                        |Selection.Or       -> (StencilModes.Additive, StencilModes.NormalizeAfterOR, "OR Normalizaion" ,volumeAdditiveEffect)
-                        |Selection.And      -> (StencilModes.Additive, StencilModes.NormalizeAfterAND,"AND Normalizaion" ,volumeAdditiveEffect)
-                        |Selection.Xor      -> (StencilModes.Additive, StencilModes.NormalizeAfterXOR,"XOR Normalizaion" ,volumeAdditiveEffect)
-                        |Selection.Subtract -> (StencilModes.Subtractive, StencilModes.NormalizeAfterSUBTRACT,"SUBTRACT Normalizaion",  volumeSubtractiveEffect)
+                    // Get the correct stencil modes and effects
+                let (stencilModeVolume, stencilModeNormalize, name, effect)= 
+                    match selection with
+                    |Selection.Single   -> (StencilModes.Additive, StencilModes.NormalizeAfterOR, "No Normalizaion" ,volumeAdditiveEffect)
+                    |Selection.Or       -> (StencilModes.Additive, StencilModes.NormalizeAfterOR, "OR Normalizaion" ,volumeAdditiveEffect)
+                    |Selection.And      -> (StencilModes.Additive, StencilModes.NormalizeAfterAND,"AND Normalizaion" ,volumeAdditiveEffect)
+                    |Selection.Xor      -> (StencilModes.Additive, StencilModes.NormalizeAfterXOR,"XOR Normalizaion" ,volumeAdditiveEffect)
+                    |Selection.Subtract -> (StencilModes.Subtractive, StencilModes.NormalizeAfterSUBTRACT,"SUBTRACT Normalizaion",  volumeSubtractiveEffect)
                 
-                    let buffers = if (renderVolumes) then Set.ofList[DefaultSemantic.Colors; DefaultSemantic.Stencil]  else (Set.singleton DefaultSemantic.Stencil)
+                let buffers = if (renderVolumes) then Set.ofList[DefaultSemantic.Colors; DefaultSemantic.Stencil]  else (Set.singleton DefaultSemantic.Stencil)
            
-                    // Create Scenegraph for light/darkcap
-                    let lightcapSG = 
-                        lightcapGeometry |> Sg.ofIndexedGeometry
-                                         |> Sg.trafo        worldTrafo 
-                                         |> Sg.viewTrafo    view             
-                                         |> Sg.projTrafo    proj             
-                                         |> Sg.surface      (effect                 |> Mod.constant) 
-                                         |> Sg.blendMode    (BlendMode.Blend        |> Mod.constant)     
-                                         |> Sg.stencilMode  (stencilModeVolume      |> Mod.constant)
-                                         |> Sg.uniform      "selectionDistance" selectionDistance 
-                                         |> Sg.uniform      "lightPos" (lightPos    |> Mod.constant)                                   
-                                         |> Sg.pass         renderPassVolume    
-                                         |> Sg.writeBuffers (Some buffers)
+                // Create Scenegraph for light/darkcap
+                let lightcapSG = 
+                    lightcapGeometry |> Sg.ofIndexedGeometry
+                                        |> Sg.trafo        worldTrafo 
+                                        |> Sg.viewTrafo    p.viewTrafo             
+                                        |> Sg.projTrafo    p.projTrafo      
+                                        |> Sg.surface      (effect                 |> Mod.constant) 
+                                        |> Sg.blendMode    (BlendMode.Blend        |> Mod.constant)     
+                                        |> Sg.stencilMode  (stencilModeVolume      |> Mod.constant)
+                                        |> Sg.uniform      "selectionDistance" p.maxSelectionDistance 
+                                        |> Sg.uniform      "lightPos" (lightPos    |> Mod.constant)                                   
+                                        |> Sg.pass         renderPassVolume    
+                                        |> Sg.writeBuffers (Some buffers)
 
 
-                    // Add Normalization Pass only if not SINGLE Selection                                   
-                    let sceneGraphVolumeNormalized = 
+                // Add Normalization Pass only if not SINGLE Selection                                   
+                let sceneGraphVolumeNormalized = 
                 
-                        match selection with
-                        |Selection.Single -> lightcapSG                                    
-                        | _               -> fullscreenQuad
-                                                    |> Sg.ofIndexedGeometry
-                                                    |> Sg.surface        (normalizeStencilEffect        |> Mod.constant)
-                                                    |> Sg.depthTest      (Rendering.DepthTestMode.None  |> Mod.constant)                     
-                                                    |> Sg.stencilMode    (stencilModeNormalize          |> Mod.constant)        
-                                                    |> Sg.pass           (renderPassNormalize                          )             
-                                                    |> Sg.writeBuffers   (Some (Set.singleton DefaultSemantic.Stencil) ) 
-                                                    |> Sg.andAlso lightcapSG
+                    match selection with
+                    |Selection.Single -> lightcapSG                                    
+                    | _               -> Sg.fullScreenQuad
+                                                |> Sg.surface        (normalizeStencilEffect        |> Mod.constant)
+                                                |> Sg.depthTest      (Rendering.DepthTestMode.None  |> Mod.constant)                     
+                                                |> Sg.stencilMode    (stencilModeNormalize          |> Mod.constant)        
+                                                |> Sg.pass           (renderPassNormalize                          )             
+                                                |> Sg.writeBuffers   (Some (Set.singleton DefaultSemantic.Stencil) ) 
+                                                |> Sg.andAlso lightcapSG
                                     
                                                                       
-                    // Return combined scenegraph             
-                    let sceneGraph = Sg.group'[sceneGraphVolumeNormalized; sceneGraph]                                            
-                    (sceneGraph, remainingPasses)
-                | _::_                                      -> failwith "To many renderpasses used! Stop selecting you moron"
+                // Return combined scenegraph             
+                Sg.group'[sceneGraphVolumeNormalized]                                                           
+
 
      
         // ----------------------------------------------------------------------------------------------- //
         // Inverts the current selection by flipping the stencil buffer
         // ----------------------------------------------------------------------------------------------- //
-        let invertSelection(sceneGraph: ISg)(renderPassList): (ISg * list<RenderPass>) = 
+        let invertSelection(renderPass1 : RenderPass)(renderPass2 : RenderPass) = 
 
-            match renderPassList with
-            | []                                        -> failwith "To many renderpasses used! Stop selecting you moron" // TODO RESIZE
-            | renderPass1::renderPass2::remainingPasses -> 
-            
-                
-                // Normalize Pass 1: Increment all values in the stencilbuffer
-                let normalizePass1SG = 
-                        fullscreenQuad
-                            |> Sg.ofIndexedGeometry
-                            |> Sg.surface        (normalizeStencilEffect                 |> Mod.constant)                      
-                            |> Sg.stencilMode    (StencilModes.NormalizeAfterINVERTPass1 |> Mod.constant)        
-                            |> Sg.pass           renderPass1     
-                        
-                // Normalize Pass2: Set all values greater 1 to 0               
-                let normalizePass2SG = 
-                        fullscreenQuad
-                            |> Sg.ofIndexedGeometry
-                            |> Sg.surface        (normalizeStencilEffect         |> Mod.constant)
-                            |> Sg.depthTest      (Rendering.DepthTestMode.None   |> Mod.constant)                     
-                            |> Sg.stencilMode    (StencilModes.NormalizeAfterXOR |> Mod.constant)        
-                            |> Sg.pass           renderPass2    
                            
-                let normalizeStencilSG = Sg.group'[normalizePass1SG; normalizePass2SG]
+            // Normalize Pass 1: Increment all values in the stencilbuffer
+            let normalizePass1SG = 
+                    Sg.fullScreenQuad
 
-                let normalizeStencilSG = Sg.WriteBuffersApplicator(Some (Set.singleton DefaultSemantic.Stencil), (normalizeStencilSG |> Mod.constant)) :> ISg
+                        |> Sg.surface        (normalizeStencilEffect                 |> Mod.constant)                      
+                        |> Sg.stencilMode    (StencilModes.NormalizeAfterINVERTPass1 |> Mod.constant)        
+                        |> Sg.pass           renderPass1     
+                        
+            // Normalize Pass2: Set all values greater 1 to 0               
+            let normalizePass2SG = 
+                    Sg.fullScreenQuad
+                        |> Sg.surface        (normalizeStencilEffect         |> Mod.constant)
+                        |> Sg.depthTest      (Rendering.DepthTestMode.None   |> Mod.constant)                     
+                        |> Sg.stencilMode    (StencilModes.NormalizeAfterXOR |> Mod.constant)        
+                        |> Sg.pass           renderPass2    
+                           
+            let normalizeStencilSG = Sg.group'[normalizePass1SG; normalizePass2SG]
 
-                // Return combined scenegraph     
-                let sceneGraph = Sg.group'[normalizeStencilSG;  normalizeStencilSG; sceneGraph]                                            
-                (sceneGraph, remainingPasses)
+            let normalizeStencilSG = Sg.WriteBuffersApplicator(Some (Set.singleton DefaultSemantic.Stencil), (normalizeStencilSG |> Mod.constant)) :> ISg
 
-            | _::_                                      -> failwith "To many renderpasses used! Stop selecting you moron"
+            // Return combined scenegraph     
+            Sg.group'[normalizeStencilSG;  normalizeStencilSG]                                            
+                      
 
 
         // ----------------------------------------------------------------------------------------------- //
         // Recoursive function for selection
         // ----------------------------------------------------------------------------------------------- //
-        let rec addSelectionToSceneGraph (selection : Lasso.Selection)(sceneGraph : ISg )(renderVolumes: bool)(renderPassList) : (ISg * list<RenderPass>)=
+        let rec addSelectionToSceneGraph (selection : Lasso.Selection)(renderVolumes: bool)(renderPassList) : (ISg * list<RenderPass>)=
+
+                // Take next renderPass from list
+                match renderPassList with
+                | renderPass2 :: renderPass1 :: renderPasses -> 
+                     
+                        match selection with
+                        |Lasso.Selection.Single polygon     ->  // Create scenegraph for current selection
+                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Single   
+                                                            // No Recoursion => return
+                                                            (volumeSg, renderPasses)                                                                             
+
+                        // OR Selection => Recoursive add Selection
+                        |Lasso.Or (selection, polygon)      ->  // Create scenegraph for current selection
+                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Or    
+                                                            // Recoursive selection
+                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
+                                                            
+                                                            // return combined scenegraphs and remaining RenderPasses                                 
+                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
 
 
+                        // And Selection => Recoursive add Selection
+                        |Lasso.And (selection, polygon)     -> // Create scenegraph for current selection
+                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.And    
+                                                            // Recoursive selection
+                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
+                                                            
+                                                            // return combined scenegraphs and remaining RenderPasses                                 
+                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
+
+                        // XOR Selection => Recoursive add Selection
+                        |Lasso.Xor (selection, polygon)     -> // Create scenegraph for current selection
+                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Xor    
+                                                            // Recoursive selection
+                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
+                                                            
+                                                            // return combined scenegraphs and remaining RenderPasses                                 
+                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
+
+                        // SUBTRACT Selection => Recoursive add Selection
+                        |Lasso.Subtract (selection, polygon) -> // Create scenegraph for current selection
+                                                            let volumeSg = addSelectionPolygon polygon renderVolumes renderPass1 renderPass2 Selection.Subtract    
+                                                           
+                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPasses                                                
+                                                            
+                                                            // return combined scenegraphs and remaining RenderPasses                                 
+                                                            (Sg.group' [sg; volumeSg], remainingRenderPasses)
+
+                        // INVERT Selection => Recoursive add Selection
+                        |Lasso.Invert (selection)           -> // Create scenegraph for inversion
+                                                            let invertSg = invertSelection renderPass1 renderPass2       
+                                                            // Recoursive selection
+                                                            let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection renderVolumes renderPassList                                                                                                         
+                                                            // return combined scenegraphs and remaining RenderPasses         
+                                                            (Sg.group' [sg; invertSg], remainingRenderPasses)                                   
+                        // No Selection => Return empty Sg
+                        |Lasso.NoSelection                   -> (Sg.ofList [], renderPassList) 
+                                 
+                | []    -> failwith "Not enough renderpasses allocated"
+                | _::_  -> failwith "Not enough renderpasses allocated"
+                                      
+        
+
+
+        let highlightSelectionPass = Rendering.RenderPass.after "Highlight_SelectionPass" Rendering.RenderPassOrder.Arbitrary p.geometryPass              
+                
             
-                match selection with
-                |Lasso.Selection.Single polygon ->  addSelectionPolygon polygon sceneGraph renderVolumes renderPassList Selection.Single                                                                                    
+        
+        
+        // TODO Dynamically resize renderPasses
+        let numRenderPasses = 99
+        let renderPassList = appendRenderPass (RenderPass.after "100" Rendering.RenderPassOrder.Arbitrary p.geometryPass) numRenderPasses
 
-                // OR Selection => Recoursive add Selection
-                |Lasso.Or (selection, polygon)  -> 
-                                                    // Recoursive selection
-                                                    //for i in 0..10 do
-                                                    let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                
-                                                    // Add current polygon to scenegraph
-                                                    addSelectionPolygon polygon sg renderVolumes remainingRenderPasses Selection.Or                                           
-
-
-                // And Selection => Recoursive add Selection
-                |Lasso.And (selection, polygon) -> 
-                                                    // Recoursive selection
-                                                    let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                
-                                                    // Add current polygon to scenegraph
-                                                    addSelectionPolygon polygon sg renderVolumes remainingRenderPasses Selection.And   
-
-                // XOR Selection => Recoursive add Selection
-                |Lasso.Xor (selection, polygon) -> 
-                                                    // Recoursive selection
-                                                    let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                
-                                                    // Add current polygon to scenegraph
-                                                    addSelectionPolygon polygon sg renderVolumes remainingRenderPasses Selection.Xor   
-
-                // SUBTRACT Selection => Recoursive add Selection
-                |Lasso.Subtract (selection, polygon) -> 
-                                                    // Recoursive selection
-                                                    let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                
-                                                    // Add current polygon to scenegraph
-                                                    addSelectionPolygon polygon sg renderVolumes remainingRenderPasses Selection.Subtract   
-
-                // INVERT Selection => Recoursive add Selection
-                |Lasso.Invert (selection)            -> 
-                                                        // Add selection to scenegraph
-                                                        let (sg, remainingRenderPasses) = addSelectionToSceneGraph selection sceneGraph renderVolumes renderPassList                                                                                                         
-                                                        // Add current polygon to scenegraph
-                                                        invertSelection sg remainingRenderPasses                                            
-
-                |Lasso.NoSelection                   -> (sceneGraph, renderPassList)          
-            
-                       
-        // Attach Screen Space Volume Blending Effect        
-        let sceneGraph = 
-            fullscreenQuad
-                |> Sg.ofIndexedGeometry
+        // Scenegraph with a fullscreenquad to highlight the selection    
+        let highlightSg = 
+                Sg.fullScreenQuad
                 |> Sg.surface        (hightlightEffect                      |> Mod.constant)
                 |> Sg.depthTest      (Rendering.DepthTestMode.None          |> Mod.constant)                     
                 |> Sg.blendMode      (BlendMode.Blend                       |> Mod.constant) 
                 |> Sg.stencilMode    (StencilModes.stencilModeHighLightOnes |> Mod.constant)        
-                |> Sg.pass           highlightSelectionPass            
-                |> Sg.andAlso        sceneGraph  
-        
+                |> Sg.pass           highlightSelectionPass  
 
        
 
@@ -267,14 +296,19 @@ module SelectionVisualization =
         // Adaptive Function to listen for change in Selection
         // ----------------------------------------------------------------------------------------------- // 
         let sceneGraph = 
-            adaptive {
-                let! lasso = lasso.Selection.selection
-                let! renderVolumes = showVolumes
+            let sg = 
+                adaptive {
+                    let! lasso = p.lasso.Selection.selection
+                    let! renderVolumes = p.showVolumes
                 
-                let (sceneGraphWithVolumes, _) = addSelectionToSceneGraph lasso sceneGraph renderVolumes renderPassList 
+                    let (volumeSg, _) = addSelectionToSceneGraph lasso renderVolumes renderPassList 
                 
-                return sceneGraphWithVolumes
-            }
-        
+                    return volumeSg
+                }
+            sg  |> Sg.dynamic
+                |> Sg.andAlso highlightSg
+
+      
+
         // Return RenderPass after selection
         (sceneGraph, highlightSelectionPass)
