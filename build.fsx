@@ -9,7 +9,7 @@ open Aardvark.Fake
 
 do Environment.CurrentDirectory <- __SOURCE_DIRECTORY__
 
-DefaultSetup.install ["src/Volume Selection.sln"]
+DefaultSetup.install ["src/SelectionVisualization.sln"]
 
 Target "Tests" (fun () ->
     Fake.NUnitSequential.NUnit (fun p -> { p with ToolPath = @"packages\NUnit.Runners\tools"
